@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Reviews</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h2>Product Details</h2>
+    <a href="{{ url_for('product_routes.product_home') }}">Back</a>
+
+    <div>
+        <h3>Product Name: {{ response_data['product'].name }}</h3>
+        <p>Price: {{ response_data['product'].price }}</p>
+        <p>Rating: {{ response_data['product'].average_rating }}</p>
+    </div>
+
+    <h2>Product Reviews</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>Rating</th>
+                <th>Review Content</th>
+                <th>Created Datetime</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for review in response_data['product'].reviews %}
+            <tr>
+                <td id = "email_{{ response_data['product'].id }}">{{ review.email }}</td>
+                <td id = "rating_{{ response_data['product'].id }}">{{ review.rating }}</td>
+                <td id = "review_content_{{ response_data['product'].id }}">{{ review.review_content }}</td>
+                <td id = "created_at_{{ response_data['product'].id }}">{{ review.created_at }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

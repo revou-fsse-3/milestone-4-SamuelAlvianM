@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            margin: 2rem;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        button {
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        .search-container {
+            margin-top: 20px;
+        }
+        
+        .search-input {
+            padding: 10px;
+            width: 300px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+        
+        .search-button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        #newProductForm {
+            width: 50%;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #formSection {
+            text-align: center;
+            color: #333333;
+        }
+
+        #productForm {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-bottom: 5px;
+            color: #333333;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #cccccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            resize: vertical;
+        }
+
+        button {
+            width: 100px;
+            padding: 10px;
+            margin-top: 10px;
+            background-color: #4caf50;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+    </style>
+</head>
+<body>
+    <div>
+        Hello, {{ response_data['name'] }}
+        <a href="{{ url_for('user_routes_login.do_user_logout') }}">Logout</a>
+    </div>
+    <h2>Product List</h2>
+    <button onclick="openNewProductForm()">Add New Product</button>
+    <div class="search-container">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search...">
+        <button class="search-button" onclick="search()">Search</button>
+    </div>
+    <hr style="border:none;"/>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Price</th>
+                <th>Description</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in response_data['products'] %}
+            <tr>
+                <td>{{ product.id }}</td>
+                <td id="name_{{ product.id }}">{{ product.name }}</td>
+                <td id="price_{{ product.id }}">{{ product.price }}</td>
+                <td id="desc_{{ product.id }}">{{ product.description }}</td>
+                <td>
+                    <a href="{{ url_for('product_routes.product_detail', id=product.id) }}">See Reviews </a>
+                    <button onclick="openEditProductForm(this)" id="edit_{{ product.id }}">Edit</button>
+                    <button onclick="deleteProduct(this)" id="delete_{{ product.id }}">Delete</button>
+                    <button onclick="openReviewForm(this)" id="review_{{ product.id }}">Give Review</button>
+                </td>
+            </tr>
+            {% endfor %}
+
+        </tbody>
+    </table>
+    <div id="newProductForm" style="display: none;">
+        <h3 id="formSection">Add New Product</h3>
+        <form id="productForm">
+            <label for="productName">Product Name:</label>
+            <input type="text" id="productName" name="productName"><br><br>
+            <label for="productPrice">Price:</label>
+            <input type="number" id="productPrice" name="productPrice"><br><br>
+            <label for="productDescription">Description:</label><br>
+            <textarea id="productDescription" name="productDescription" rows="4" cols="50"></textarea><br><br>
+            <button type="button" onclick="submitForm()">Submit</button>
+            <button type="button" onclick="closeNewProductForm()">Cancel</button>
+        </form>
+    </div>
+
+    <div id="reviewForm" style="display: none;">
+        <h3 id="reviewSection">Give Review {{ response_data['product_name'] }} </h3>
+        <form id="formReview">
+            <label for="email">Email:</label><br>
+            <input type="text" id="email" name="email"><br><br>
+            <label for="reviewContent">Review:</label><br>
+            <textarea id="reviewContent" name="reviewContent" rows="4" cols="50" placeholder="Let me know your thoughts"></textarea><br><br>
+            <label for="rating">Rating (1-10):</label>
+            <input type="number" id="rating" name="rating" min="1" max="10"><br><br>
+            <button type="button" onclick="submitReviewForm()">Submit</button>
+            <button type="button" onclick="closeReviewForm()">Cancel</button>
+        </form>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script>
+        var form_url = "";
+        var form_method = "";
+        var base_url = "{{ url_for('product_routes.product_home') }}";
+
+
+        function openNewProductForm() {
+            form_method = 'POST';
+            form_url = "{{ url_for('product_routes.product_insert') }}";
+            document.getElementById("newProductForm").style.display = "block";
+            document.getElementById("formSection").innerHTML = "Add New Product";
+            document.getElementById("productForm").reset();
+        }
+
+        function openEditProductForm(button) {
+            var selected_product_id = button.id.split("_")[1];
+            form_method = 'PUT';
+            form_url = base_url + "/" + selected_product_id;
+
+            var name = $('#name_'+selected_product_id).html();
+            var price = $('#price_'+selected_product_id).html();
+            var desc = $('#desc_'+selected_product_id).html();
+
+            $('#productName').val(name);
+            $('#productPrice').val(price);
+            $('#productDescription').val(desc);
+
+            document.getElementById("newProductForm").style.display = "block";
+            document.getElementById("formSection").innerHTML = "Edit Product";
+        }
+
+        function closeNewProductForm() {
+            document.getElementById("newProductForm").style.display = "none";
+        }
+
+        function submitForm(){
+            var request_data = {
+                name: $('#productName').val(),
+                price: parseInt($('#productPrice').val()),
+                description: $('#productDescription'). val()
+            }
+
+            $.ajax({
+                url: form_url,
+                data: JSON.stringify(request_data),
+                method: form_method,
+                headers: {
+                    "Content-type": "application/json"
+                }
+            }).done(function(response){
+                alert(response.message);
+                location.reload();
+            })
+        }
+
+        function deleteProduct(button){
+            var selected_product_id = button.id.split("_")[1];
+            var delete_url = base_url + "/" + selected_product_id
+
+            $.ajax({
+                url: delete_url,
+                method: "DELETE"
+            }).done(function(response){
+                alert(response.message);
+                location.reload();
+            })
+        }
+
+        function search(){
+            window.location = base_url + "?query=" + $('#searchInput').val();
+        }
+
+
+        function openReviewForm(button) {
+            var selected_product_id = button.id.split("_")[1];
+            form_method = 'POST';
+            form_url = base_url + "/" + selected_product_id + "/review"
+            document.getElementById("reviewForm").style.display = "block";
+            document.getElementById("formReview").reset();
+        }
+
+        function closeReviewForm() {
+            document.getElementById("reviewForm").style.display = "none";
+        }
+
+        function submitReviewForm() {
+
+            var request_data = {
+                email: $('#email').val(),
+                review_content: $('#reviewContent').val(),
+                rating: $('#rating'). val()
+            }
+
+            $.ajax({
+                url: form_url,
+                data: request_data,
+                method: form_method
+            }).done(function(response){
+                alert(response.message);
+                location.reload();
+            })
+        }
+
+
+    </script>
+</body>
+</html>
