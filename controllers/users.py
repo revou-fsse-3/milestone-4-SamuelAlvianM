@@ -3,8 +3,11 @@ from connectors.mysql_connector import Session
 from sqlalchemy.orm import sessionmaker
 from connectors.mysql_connector import engine
 from models.user import User
+from cerberus import Validator
+from validations.user_schema import user_schema
 
 from flask_login import current_user, login_required
+
 
 
 users_route = Blueprint('users_route',__name__)
@@ -63,23 +66,29 @@ def get_user_id(user_id):
         session.close()
     
 
-@users_route.route("/users/<int:id>", methods=['PUT'])
+@users_route.route("/users/<int:user_id>", methods=['PUT'])
 @login_required
 # @jwt_required
-def product_update(id):
+def product_update(user_id):
+
+    v = Validator(user_schema)
+    json_data = request.get_json()
+    if not v.validate(json_data):
+        return jsonify({"error": v.errors}), 400
 
     connection = engine.connect()
     Session = sessionmaker(connection)
     session = Session()
     session.begin()
 
+    user = session.query(User).filter(User.user_id== user_id).first()
     try:
-        user = session.query(User).filter(User.id==id).first()
 
-        user.name = request.form['name']
-        user.email = request.form['email']
-        user.password = request.form['password']
+        user.username = json_data['username']
+        user.email = json_data['email']
+        user.set_password(json_data['password'])
 
+        session.add(user)
         session.commit()
     except Exception as e:
         session.rollback()
