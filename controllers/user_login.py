@@ -35,7 +35,7 @@ def do_user_login():
             return jsonify({"message": "Incorrect password"}), 401
 
         login_user(user, remember=False)
-        return redirect(f'/users/{user.user_id}/accounts')
+        return redirect(f'/users/{user.user_id}')
 
     except Exception as e:
         return jsonify({"message": f"Login Failed: {str(e)}"}), 500

@@ -1,10 +1,9 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import get_jwt_identity
 from connectors.mysql_connector import engine
 from sqlalchemy.orm import sessionmaker
-from models.account import Account
-from models.user import User
 from sqlalchemy.exc import IntegrityError
+
+from models.account import Account
 from flask_login import current_user, login_required
 from validations.account_schema import account_schema
 from cerberus import Validator
@@ -15,9 +14,9 @@ account_routes = Blueprint('account_routes', __name__)
 
 Session = sessionmaker(bind=engine)
 
-@account_routes.route("/users/<int:user_id>/accounts", methods=['GET'])
+@account_routes.route("/users/accounts", methods=['GET'])
 @login_required
-def get_accounts(user_id):
+def get_accounts():
 
     response_data = dict()
 
@@ -26,7 +25,7 @@ def get_accounts(user_id):
         Session = sessionmaker(connection)
         session = Session()
 
-        accounts = session.query(Account).filter(Account.user_id == user_id).all()
+        accounts = session.query(Account).filter(Account.user_id == current_user.user_id).all()
         response_data = {"accounts": [account.serialize() for account in accounts]}
         return jsonify(response_data)
     except Exception as e:
@@ -35,9 +34,9 @@ def get_accounts(user_id):
     finally:
         session.close()
 
-@account_routes.route("/users/<int:user_id>/accounts/<int:account_id>", methods=['GET'])
+@account_routes.route("/users/accounts/<int:account_id>", methods=['GET'])
 @login_required
-def get_account(user_id, account_id):
+def get_account(account_id):
 
     try:
 
@@ -45,7 +44,7 @@ def get_account(user_id, account_id):
         Session = sessionmaker(connection)
         session = Session()
 
-        account = session.query(Account).filter(Account.account_id == account_id, Account.user_id == user_id).first()
+        account = session.query(Account).filter(Account.account_id == account_id, Account.user_id == current_user.user_id).first()
         if not account:
             return jsonify({"message": "Account not found"}), 404
         return jsonify({"account": account.serialize()})
@@ -56,9 +55,9 @@ def get_account(user_id, account_id):
     finally:
         session.close()
 
-@account_routes.route("/users/<int:user_id>/accounts", methods=['POST'])
+@account_routes.route("/users/accounts", methods=['POST'])
 @login_required
-def create_account(user_id):
+def create_account():
 
     v = Validator(account_schema)
     json_data = request.get_json()
@@ -76,7 +75,7 @@ def create_account(user_id):
 
         existing_account_numbers = [account.account_number for account in session.query(Account).all()]
         account_number = generate_unique_account_number(existing_account_numbers)
-        existing_account = session.query(Account).filter(Account.user_id == user_id, Account.account_number == json_data['account_number']).first()
+        existing_account = session.query(Account).filter(Account.user_id == current_user.user_id, Account.account_number == json_data['account_number']).first()
         if existing_account:
             return jsonify({"error": "Account number already exists"}), 400
 
@@ -86,7 +85,7 @@ def create_account(user_id):
             account_number=account_number,
             balance=json_data['balance']
         )
-        print(new_account)
+
         session.add(new_account)
         session.commit()
         return jsonify({"message": "Success insert data"}), 201
@@ -110,9 +109,9 @@ def generate_unique_account_number(existing_account_numbers):
         if account_number not in existing_account_numbers:
             return account_number
 
-@account_routes.route("/users/<int:user_id>/accounts/<int:account_id>", methods=['PUT'])
+@account_routes.route("/users/accounts/<int:account_id>", methods=['PUT'])
 @login_required
-def update_account(user_id, account_id):
+def update_account(account_id):
     v = Validator(account_schema)
     json_data = request.get_json()
     if not v.validate(json_data):
@@ -120,7 +119,7 @@ def update_account(user_id, account_id):
 
     try:
         session = Session()
-        account = session.query(Account).filter(Account.user_id == user_id, Account.account_id == account_id).first()
+        account = session.query(Account).filter(Account.user_id == current_user.user_id, Account.account_id == account_id).first()
         if not account:
             return jsonify({"message": "Account not found"}), 404
 
@@ -136,12 +135,12 @@ def update_account(user_id, account_id):
     finally:
         session.close()
 
-@account_routes.route("/users/<int:user_id>/accounts/<int:account_id>", methods=['DELETE'])
+@account_routes.route("/users/accounts/<int:account_id>", methods=['DELETE'])
 @login_required
-def delete_account(user_id, account_id):
+def delete_account(account_id):
     try:
         session = Session()
-        account = session.query(Account).filter(Account.user_id == user_id, Account.account_id == account_id).first()
+        account = session.query(Account).filter(Account.user_id == current_user.user_id, Account.account_id == account_id).first()
         if not account:
             return jsonify({"message": "Account not found"}), 404
 

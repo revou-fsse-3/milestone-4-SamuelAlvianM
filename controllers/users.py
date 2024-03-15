@@ -3,15 +3,9 @@ from connectors.mysql_connector import Session
 from sqlalchemy.orm import sessionmaker
 from connectors.mysql_connector import engine
 from models.user import User
-from sqlalchemy import select, or_
 
 from flask_login import current_user, login_required
-from decorators.role_checker import role_required
 
-from validations.user_schema import user_schema
-from cerberus import Validator
-
-from flask_jwt_extended import get_jwt_identity, jwt_required, get_jwt
 
 users_route = Blueprint('users_route',__name__)
 
@@ -21,6 +15,8 @@ users_route = Blueprint('users_route',__name__)
 def get_users():
 
     try:
+        print(current_user.user_id)
+        print(current_user)
         if not current_user.is_authenticated:
             return jsonify({"error": "User not authenticated"}), 401
 
