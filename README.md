@@ -6,6 +6,9 @@
 
 ## POSTMAN DOCUMENTATION
 
+[POSTMAN-SAM](https://documenter.getpostman.com/view/32945632/2sA2xmVqdE)
+`https://documenter.getpostman.com/view/32945632/2sA2xmVqdE`
+
 > USING ENUM FOR TYPE:
 (you can only choose ONE of three below to POST)
 >> Account Type: "savings", "trading", and "platinum"
